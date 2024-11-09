@@ -34,6 +34,7 @@ model Activity {
   
   // 图片相关
   images       String?   // 活动图片URLs，用逗号分隔
+  contentImages ActivityImage[]
 
   // 关联
   bank         Bank      @relation(fields: [bankId], references: [id])
@@ -45,6 +46,15 @@ model Activity {
 
   @@index([bankId])
   @@index([startTime, endTime])
+}
+
+model ActivityImage {
+  id         Int      @id @default(autoincrement())
+  activityId Int
+  url        String
+  activity   Activity @relation(fields: [activityId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Reminder {

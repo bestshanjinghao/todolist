@@ -9,6 +9,7 @@ import ActivityForm from './ActivityForm';
 import ActivitySearch from './ActivitySearch';
 import ActivityCharts from './ActivityCharts';
 import ActivityCalendar from './ActivityCalendar';
+import moment from 'moment';
 
 const { TabPane } = Tabs;
 
@@ -103,24 +104,40 @@ export default function ActivityDashboard() {
 
   const handleAddActivity = async (values) => {
     try {
+      const imageUrls = values.images?.fileList
+        ? values.images.fileList.map(file => file.response?.data?.url || file.url).filter(Boolean)
+        : [];
+
+      const formData = {
+        ...values,
+        startTime: values.startTime ? new Date(values.startTime).toISOString() : null,
+        endTime: values.endTime ? new Date(values.endTime).toISOString() : null,
+        reminderTime: values.reminderTime ? moment(values.reminderTime).format('HH:mm') : null,
+        bankId: parseInt(values.bankId),
+        status: values.status || 0,
+        images: imageUrls.join(',')
+      };
+
       const res = await fetch('/api/activities', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(formData),
       });
       
-      if (res.ok) {
+      const result = await res.json();
+
+      if (result.success) {
         message.success('活动添加成功');
         setIsModalVisible(false);
         fetchActivities();
       } else {
-        throw new Error('添加失败');
+        throw new Error(result.error || '添加失败');
       }
     } catch (error) {
       console.error('Failed to add activity:', error);
-      message.error('活���添加失败');
+      message.error(error.message || '活动添加失败');
     }
   };
 

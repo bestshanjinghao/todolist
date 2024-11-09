@@ -10,11 +10,44 @@ import {
   Row,
   Col,
   Space,
-  Radio
+  Radio,
+  message
 } from 'antd';
 import { useState, useEffect } from 'react';
 import moment from 'moment';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
+
+const uploadProps = {
+  name: 'file',
+  action: '/api/upload',
+  headers: {
+    // 如果需要，添加认证头
+  },
+  onChange(info) {
+    if (info.file.status === 'done') {
+      message.success(`${info.file.name} 上传成功`);
+    } else if (info.file.status === 'error') {
+      message.error(`${info.file.name} 上传失败`);
+    }
+  },
+  beforeUpload(file) {
+    // 验证文件类型
+    const isImage = file.type.startsWith('image/');
+    if (!isImage) {
+      message.error('只能上传图片文件！');
+      return false;
+    }
+    
+    // 验证文件大小（小于 2MB）
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      message.error('图片必须小于 2MB！');
+      return false;
+    }
+    
+    return true;
+  }
+};
 
 export default function ActivityForm({ onSubmit, initialValues }) {
   const [banks, setBanks] = useState([]);
@@ -54,16 +87,26 @@ export default function ActivityForm({ onSubmit, initialValues }) {
 
   const handleSubmit = async (values) => {
     try {
-      const imageUrls = values.images
-        ? values.images.map(file => file.response?.url || file.url).filter(Boolean)
+      // 处理图片数据
+      const imageUrls = values.images?.fileList
+        ? values.images.fileList.map(file => file.response?.data?.url || file.url).filter(Boolean)
         : [];
 
+      const contentImageUrls = values.contentImages?.fileList
+        ? values.contentImages.fileList.map(file => file.response?.data?.url || file.url).filter(Boolean)
+        : [];
+
+      // 处理日期和时间数据
       const data = {
         ...values,
-        startTime: values.startTime.toISOString(),
-        endTime: values.endTime.toISOString(),
-        reminderTime: values.reminderTime?.format('HH:mm'),
+        startTime: values.startTime ? values.startTime.toDate().toISOString() : null,
+        endTime: values.endTime ? values.endTime.toDate().toISOString() : null,
+        // 只在选择了提醒类型且不是 NONE 时处理提醒时间
+        reminderTime: values.reminderType !== 'NONE' && values.reminderTime 
+          ? moment(values.reminderTime, 'HH:mm').format('HH:mm')
+          : null,
         images: imageUrls.join(','),
+        contentImages: contentImageUrls.map(url => ({ url }))
       };
 
       await onSubmit(data);
@@ -72,6 +115,7 @@ export default function ActivityForm({ onSubmit, initialValues }) {
       }
     } catch (error) {
       console.error('提交失败:', error);
+      message.error('提交失败');
     }
   };
 
@@ -120,7 +164,10 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             <Form.Item
               name="title"
               label="活动名称"
-              rules={[{ required: true, message: '请输入活动名称' }]}
+              rules={[
+                { required: true, message: '请输入活动名称' },
+                { max: 100, message: '活动名称不能超过100个字符' }
+              ]}
             >
               <Input placeholder="请输入活动名称" />
             </Form.Item>
@@ -163,7 +210,10 @@ export default function ActivityForm({ onSubmit, initialValues }) {
         <Form.Item
           name="description"
           label="活动说明"
-          rules={[{ required: true, message: '请输入活动说明' }]}
+          rules={[
+            { required: true, message: '请输入活动说明' },
+            { max: 500, message: '活动说明不能超过500个字符' }
+          ]}
         >
           <Input.TextArea 
             rows={4} 
@@ -260,6 +310,22 @@ export default function ActivityForm({ onSubmit, initialValues }) {
           </Form.Item>
         )}
       </Card>
+
+      <Form.Item
+        name="contentImages"
+        label="活动图片"
+        valuePropName="fileList"
+        getValueFromEvent={e => {
+          if (Array.isArray(e)) {
+            return e;
+          }
+          return e?.fileList;
+        }}
+      >
+        <Upload {...uploadProps} listType="picture-card">
+          <Button icon={<UploadOutlined />}>上传图片</Button>
+        </Upload>
+      </Form.Item>
 
       <Form.Item>
         <Button type="primary" htmlType="submit">

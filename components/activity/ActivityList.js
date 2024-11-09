@@ -1,5 +1,6 @@
 import { List, Card, Tag, Space, Button, Checkbox } from 'antd';
 import { CheckOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import moment from 'moment';
 
 export default function ActivityList({ 
   activities, 
@@ -16,6 +17,10 @@ export default function ActivityList({
       3: <Tag color="red">已过期</Tag>,
     };
     return statusMap[status];
+  };
+
+  const formatDate = (dateString) => {
+    return moment(dateString).format('YYYY-MM-DD HH:mm');
   };
 
   return (
@@ -59,7 +64,11 @@ export default function ActivityList({
               <div>奖励：{activity.reward}</div>
               <div>
                 <ClockCircleOutlined style={{ marginRight: 8 }} />
-                {new Date(activity.endTime).toLocaleDateString()}截止
+                开始：{formatDate(activity.startTime)}
+              </div>
+              <div>
+                <ClockCircleOutlined style={{ marginRight: 8 }} />
+                截止：{formatDate(activity.endTime)}
               </div>
             </Space>
           </Card>

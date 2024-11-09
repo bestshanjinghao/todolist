@@ -6,23 +6,39 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const keyword = searchParams.get('keyword');
     const bankId = searchParams.get('bankId');
+    const status = searchParams.get('status');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
+    // 构建查询条件
     const where = {};
     
     if (keyword) {
-      where.title = { contains: keyword };
+      where.OR = [
+        { title: { contains: keyword } },
+        { description: { contains: keyword } }
+      ];
     }
-    
+
     if (bankId) {
-      where.bankId = parseInt(bankId, 10);
+      where.bankId = parseInt(bankId);
     }
-    
-    if (startDate && endDate) {
+
+    if (status !== null && status !== undefined) {
+      where.status = parseInt(status);
+    }
+
+    if (startDate) {
       where.startTime = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+        ...where.startTime,
+        gte: new Date(startDate)
+      };
+    }
+
+    if (endDate) {
+      where.endTime = {
+        ...where.endTime,
+        lte: new Date(endDate)
       };
     }
 
@@ -32,18 +48,38 @@ export async function GET(request) {
         bank: true,
         reminders: true,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        { status: 'asc' },
+        { endTime: 'asc' },
+        { createdAt: 'desc' }
+      ]
     });
 
-    return NextResponse.json({ success: true, data: activities });
+    // 格式化日期
+    const formattedActivities = activities.map(activity => ({
+      ...activity,
+      startTime: activity.startTime.toISOString(),
+      endTime: activity.endTime.toISOString(),
+      createdAt: activity.createdAt.toISOString(),
+      updatedAt: activity.updatedAt.toISOString(),
+      reminders: activity.reminders.map(reminder => ({
+        ...reminder,
+        remindTime: reminder.remindTime.toISOString(),
+        createdAt: reminder.createdAt.toISOString(),
+        updatedAt: reminder.updatedAt.toISOString(),
+      }))
+    }));
+
+    return NextResponse.json({
+      success: true,
+      data: formattedActivities
+    });
   } catch (error) {
-    console.error('Fetch activities error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch activities' },
-      { status: 500 }
-    );
+    console.error('Get activities error:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || '获取活动列表失败'
+    }, { status: 500 });
   }
 }
 
@@ -51,48 +87,66 @@ export async function POST(request) {
   try {
     const data = await request.json();
     
-    // 处理图片数据
-    const contentImages = data.content?.map(file => ({
-      url: file.response?.url || file.url
-    }));
+    // 添加数据验证
+    if (!data.title?.trim()) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '活动标题不能为空' 
+      }, { status: 400 });
+    }
+    
+    if (!data.bankId) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '请选择银行' 
+      }, { status: 400 });
+    }
+    
+    if (!data.endTime) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '请设置截止时间' 
+      }, { status: 400 });
+    }
+
+    // 验证日期逻辑
+    const startTime = new Date(data.startTime);
+    const endTime = new Date(data.endTime);
+    if (endTime < startTime) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '结束时间不能早于开始时间' 
+      }, { status: 400 });
+    }
 
     const activity = await prisma.activity.create({
       data: {
-        bankId: data.bankId,
-        title: data.title,
-        description: data.description,
-        reward: data.reward,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        activityType: data.activityType,
-        targetAmount: data.targetAmount,
-        targetTimes: data.targetTimes,
-        minAmount: data.minAmount,
-        reminderType: data.reminderType,
-        reminderDay: data.reminderDay,
-        reminderDate: data.reminderDate,
-        reminderTime: data.reminderTime,
-        participationLimit: data.participationLimit,
-        contentImages: {
-          create: contentImages
-        }
+        bankId: parseInt(data.bankId),
+        title: data.title.trim(),
+        description: data.description?.trim(),
+        startTime: new Date(data.startTime),
+        endTime: new Date(data.endTime),
+        status: parseInt(data.status) || 0,
+        reminderType: data.reminderType || 'NONE',
+        reminderDay: data.reminderDay ? parseInt(data.reminderDay) : null,
+        reminderDate: data.reminderDate ? parseInt(data.reminderDate) : null,
+        reminderTime: data.reminderTime || null,
+        images: data.images || ''
       },
       include: {
-        contentImages: true
+        bank: true
       }
     });
 
-    // 如果设置了提醒，创建提醒任务
-    if (data.reminderType !== 'NONE') {
-      await createReminderTask(activity);
-    }
-
-    return NextResponse.json(activity);
+    return NextResponse.json({
+      success: true,
+      data: activity
+    });
   } catch (error) {
     console.error('Create activity error:', error);
-    return NextResponse.json(
-      { error: "Failed to create activity" },
-      { status: 500 }
-    );
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || '创建活动失败'
+    }, { status: 500 });
   }
 } 

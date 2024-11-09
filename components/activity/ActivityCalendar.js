@@ -1,5 +1,6 @@
 import { Calendar, Badge, Modal } from 'antd';
 import { useState } from 'react';
+import moment from 'moment';
 
 export default function ActivityCalendar({ activities }) {
   const [selectedActivity, setSelectedActivity] = useState(null);
@@ -7,8 +8,8 @@ export default function ActivityCalendar({ activities }) {
   const getListData = (value) => {
     const dateStr = value.format('YYYY-MM-DD');
     return activities.filter(activity => {
-      const startDate = new Date(activity.startTime).toISOString().split('T')[0];
-      const endDate = new Date(activity.endTime).toISOString().split('T')[0];
+      const startDate = moment(activity.startTime).format('YYYY-MM-DD');
+      const endDate = moment(activity.endTime).format('YYYY-MM-DD');
       return dateStr >= startDate && dateStr <= endDate;
     });
   };
@@ -48,8 +49,8 @@ export default function ActivityCalendar({ activities }) {
             <h3>{selectedActivity.title}</h3>
             <p>银行：{selectedActivity.bank.name}</p>
             <p>奖励：{selectedActivity.reward}</p>
-            <p>开始时间：{new Date(selectedActivity.startTime).toLocaleString()}</p>
-            <p>结束时间：{new Date(selectedActivity.endTime).toLocaleString()}</p>
+            <p>开始时间：{moment(selectedActivity.startTime).format('YYYY-MM-DD HH:mm')}</p>
+            <p>结束时间：{moment(selectedActivity.endTime).format('YYYY-MM-DD HH:mm')}</p>
             <p>状态：{['未开始', '进行中', '已完成', '已过期'][selectedActivity.status]}</p>
             {selectedActivity.description && (
               <p>描述：{selectedActivity.description}</p>
