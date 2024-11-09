@@ -24,14 +24,23 @@ export default function ActivityForm({ onSubmit, initialValues }) {
   useEffect(() => {
     fetchBanks();
     if (initialValues) {
-      form.setFieldsValue({
+      const formData = {
         ...initialValues,
         startTime: moment(initialValues.startTime),
         endTime: moment(initialValues.endTime),
-        reminderTime: initialValues.reminderTime ? moment(initialValues.reminderTime, 'HH:mm') : null
-      });
+        reminderTime: initialValues.reminderTime ? moment(initialValues.reminderTime, 'HH:mm') : null,
+        images: initialValues.images
+          ? initialValues.images.split(',').map(url => ({
+              uid: url,
+              name: url.split('/').pop(),
+              status: 'done',
+              url: url,
+            }))
+          : [],
+      };
+      form.setFieldsValue(formData);
     }
-  }, [initialValues]);
+  }, [initialValues, form]);
 
   const fetchBanks = async () => {
     try {
@@ -45,12 +54,18 @@ export default function ActivityForm({ onSubmit, initialValues }) {
 
   const handleSubmit = async (values) => {
     try {
+      const imageUrls = values.images
+        ? values.images.map(file => file.response?.url || file.url).filter(Boolean)
+        : [];
+
       const data = {
         ...values,
         startTime: values.startTime.toISOString(),
         endTime: values.endTime.toISOString(),
         reminderTime: values.reminderTime?.format('HH:mm'),
+        images: imageUrls.join(','),
       };
+
       await onSubmit(data);
       if (!initialValues) {
         form.resetFields();
@@ -64,7 +79,7 @@ export default function ActivityForm({ onSubmit, initialValues }) {
     if (Array.isArray(e)) {
       return e;
     }
-    return e?.fileList;
+    return e?.fileList || [];
   };
 
   const handleReminderTypeChange = (e) => {
@@ -79,7 +94,8 @@ export default function ActivityForm({ onSubmit, initialValues }) {
       onFinish={handleSubmit}
       initialValues={{
         startTime: moment(),
-        reminderType: 'NONE'
+        reminderType: 'NONE',
+        images: [],
       }}
     >
       <Card title="基础信息" style={{ marginBottom: 24 }}>
@@ -162,12 +178,17 @@ export default function ActivityForm({ onSubmit, initialValues }) {
           getValueFromEvent={normFile}
         >
           <Upload.Dragger 
-            name="files"
+            name="file"
             action="/api/upload"
             multiple
             listType="picture-card"
+            accept="image/*"
           >
-            <p>点击或拖拽上传活动图片</p>
+            <p className="ant-upload-drag-icon">
+              <PlusOutlined />
+            </p>
+            <p className="ant-upload-text">点击或拖拽上传活动图片</p>
+            <p className="ant-upload-hint">支持单个或批量上传图片</p>
           </Upload.Dragger>
         </Form.Item>
       </Card>
