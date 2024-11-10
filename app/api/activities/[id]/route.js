@@ -148,25 +148,32 @@ export async function PUT(request, { params }) {
       }, { status: 400 });
     }
 
+    // 构建更新数据
+    const updateData = {
+      title: data.title.trim(),
+      description: data.description?.trim(),
+      startTime: startTime.toDate(),
+      endTime: endTime.toDate(),
+      status: data.status !== undefined ? parseInt(data.status) : undefined,
+      reminderType: data.reminderType || 'NONE',
+      reminderDay: data.reminderDay ? parseInt(data.reminderDay) : null,
+      reminderDate: data.reminderDate ? parseInt(data.reminderDate) : null,
+      reminderTime: data.reminderTime || null,
+      images: data.images || '',
+      updatedAt: new Date(),
+      bank: {
+        connect: {
+          id: parseInt(data.bankId)
+        }
+      }
+    };
+
     // 更新活动
     const activity = await prisma.activity.update({
       where: { 
         id: parseInt(id) 
       },
-      data: {
-        bankId: parseInt(data.bankId),
-        title: data.title.trim(),
-        description: data.description?.trim(),
-        startTime: startTime.toDate(),
-        endTime: endTime.toDate(),
-        status: parseInt(data.status),
-        reminderType: data.reminderType || 'NONE',
-        reminderDay: data.reminderDay ? parseInt(data.reminderDay) : null,
-        reminderDate: data.reminderDate ? parseInt(data.reminderDate) : null,
-        reminderTime: data.reminderTime || null,
-        images: data.images || '',
-        updatedAt: new Date()
-      },
+      data: updateData,
       include: {
         bank: true,
         reminders: true

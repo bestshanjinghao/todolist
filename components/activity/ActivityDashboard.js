@@ -229,9 +229,54 @@ export default function ActivityDashboard() {
     });
   };
 
-  const handleEdit = (activity) => {
+  const handleEditClick = (activity) => {
     setEditingActivity(activity);
     setIsModalVisible(true);
+  };
+
+  const handleEdit = async (values) => {
+    try {
+      if (!editingActivity?.id) {
+        throw new Error('没有选中要编辑的活动');
+      }
+
+      const imageUrls = values.images?.fileList
+        ? values.images.fileList.map(file => file.response?.data?.url || file.url).filter(Boolean)
+        : [];
+
+      const formData = {
+        ...values,
+        startTime: moment(values.startTime).format(),
+        endTime: moment(values.endTime).format(),
+        reminderTime: values.reminderType !== 'NONE' && values.reminderTime 
+          ? moment(values.reminderTime).format('HH:mm')  // 使用 HH:mm 格式
+          : null,
+        bankId: parseInt(values.bankId),
+        images: imageUrls.join(',')
+      };
+
+      console.log('Submitting form data:', formData); // 添加日志以便调试
+
+      const res = await fetch(`/api/activities/${editingActivity.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      
+      const result = await res.json();
+
+      if (result.success) {
+        message.success('活动编辑成功');
+        setIsModalVisible(false);
+        setEditingActivity(null);
+        fetchActivities();
+      } else {
+        throw new Error(result.error || '编辑失败');
+      }
+    } catch (error) {
+      console.error('Failed to edit activity:', error);
+      message.error(error.message || '活动编辑失败');
+    }
   };
 
   const handleDelete = async (id) => {
@@ -311,10 +356,10 @@ export default function ActivityDashboard() {
               activities={(activities || []).filter(a => a.status === 1)}
               loading={loading}
               onStatusChange={handleStatusChange}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
               selectedIds={selectedIds}
               onSelectChange={handleSelectChange}
+              onEdit={handleEditClick}
+              onDelete={handleDelete}
             />
           </TabPane>
           <TabPane tab="未开始" key="2">
@@ -322,10 +367,10 @@ export default function ActivityDashboard() {
               activities={(activities || []).filter(a => a.status === 0)}
               loading={loading}
               onStatusChange={handleStatusChange}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
               selectedIds={selectedIds}
               onSelectChange={handleSelectChange}
+              onEdit={handleEditClick}
+              onDelete={handleDelete}
             />
           </TabPane>
           <TabPane tab="已完成" key="3">
@@ -333,10 +378,10 @@ export default function ActivityDashboard() {
               activities={(activities || []).filter(a => a.status === 2)}
               loading={loading}
               onStatusChange={handleStatusChange}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
               selectedIds={selectedIds}
               onSelectChange={handleSelectChange}
+              onEdit={handleEditClick}
+              onDelete={handleDelete}
             />
           </TabPane>
         </Tabs>
