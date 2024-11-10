@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import moment from 'moment';
 
 export async function GET(request) {
   try {
@@ -31,14 +32,14 @@ export async function GET(request) {
     if (startDate) {
       where.startTime = {
         ...where.startTime,
-        gte: new Date(startDate)
+        gte: moment(startDate).toDate()
       };
     }
 
     if (endDate) {
       where.endTime = {
         ...where.endTime,
-        lte: new Date(endDate)
+        lte: moment(endDate).toDate()
       };
     }
 
@@ -58,15 +59,15 @@ export async function GET(request) {
     // 格式化日期
     const formattedActivities = activities.map(activity => ({
       ...activity,
-      startTime: activity.startTime.toISOString(),
-      endTime: activity.endTime.toISOString(),
-      createdAt: activity.createdAt.toISOString(),
-      updatedAt: activity.updatedAt.toISOString(),
+      startTime: moment(activity.startTime).format(),
+      endTime: moment(activity.endTime).format(),
+      createdAt: moment(activity.createdAt).format(),
+      updatedAt: moment(activity.updatedAt).format(),
       reminders: activity.reminders.map(reminder => ({
         ...reminder,
-        remindTime: reminder.remindTime.toISOString(),
-        createdAt: reminder.createdAt.toISOString(),
-        updatedAt: reminder.updatedAt.toISOString(),
+        remindTime: moment(reminder.remindTime).format(),
+        createdAt: moment(reminder.createdAt).format(),
+        updatedAt: moment(reminder.updatedAt).format(),
       }))
     }));
 
@@ -110,9 +111,9 @@ export async function POST(request) {
     }
 
     // 验证日期逻辑
-    const startTime = new Date(data.startTime);
-    const endTime = new Date(data.endTime);
-    if (endTime < startTime) {
+    const startTime = moment(data.startTime);
+    const endTime = moment(data.endTime);
+    if (endTime.isBefore(startTime)) {
       return NextResponse.json({ 
         success: false, 
         error: '结束时间不能早于开始时间' 
@@ -124,8 +125,8 @@ export async function POST(request) {
         bankId: parseInt(data.bankId),
         title: data.title.trim(),
         description: data.description?.trim(),
-        startTime: new Date(data.startTime),
-        endTime: new Date(data.endTime),
+        startTime: startTime.toDate(),
+        endTime: endTime.toDate(),
         status: parseInt(data.status) || 0,
         reminderType: data.reminderType || 'NONE',
         reminderDay: data.reminderDay ? parseInt(data.reminderDay) : null,
@@ -138,9 +139,18 @@ export async function POST(request) {
       }
     });
 
+    // 格式化返回的日期
+    const formattedActivity = {
+      ...activity,
+      startTime: moment(activity.startTime).format(),
+      endTime: moment(activity.endTime).format(),
+      createdAt: moment(activity.createdAt).format(),
+      updatedAt: moment(activity.updatedAt).format()
+    };
+
     return NextResponse.json({
       success: true,
-      data: activity
+      data: formattedActivity
     });
   } catch (error) {
     console.error('Create activity error:', error);

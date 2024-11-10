@@ -10,7 +10,7 @@ export default function ActivityCalendar({ activities }) {
     return activities.filter(activity => {
       const startDate = moment(activity.startTime).format('YYYY-MM-DD');
       const endDate = moment(activity.endTime).format('YYYY-MM-DD');
-      return dateStr >= startDate && dateStr <= endDate;
+      return moment(dateStr).isBetween(startDate, endDate, 'day', '[]');
     });
   };
 

@@ -1,123 +1,104 @@
 import { Card, Row, Col } from 'antd';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
+import { Pie, Line } from '@ant-design/plots';
 import moment from 'moment';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-
 export default function ActivityCharts({ activities }) {
-  // 按银行统计活动数量
-  const bankStats = activities.reduce((acc, activity) => {
-    const bankName = activity.bank.name;
-    acc[bankName] = (acc[bankName] || 0) + 1;
+  // 状态分布数据
+  const statusData = [
+    { type: '未开始', value: activities.filter(a => a.status === 0).length },
+    { type: '进行中', value: activities.filter(a => a.status === 1).length },
+    { type: '已完成', value: activities.filter(a => a.status === 2).length },
+    { type: '已过期', value: activities.filter(a => a.status === 3).length },
+  ].filter(item => item.value > 0);
+
+  // 按银行分组数据
+  const bankData = activities.reduce((acc, curr) => {
+    const bank = curr.bank.name;
+    acc[bank] = (acc[bank] || 0) + 1;
     return acc;
   }, {});
 
-  const bankData = Object.entries(bankStats).map(([name, value]) => ({
-    name,
+  const bankChartData = Object.entries(bankData).map(([name, value]) => ({
+    type: name,
     value
   }));
 
-  // 按活动类型统计
-  const typeStats = activities.reduce((acc, activity) => {
-    const type = activity.activityType === 'AMOUNT' ? '消费金额' : '刷卡次数';
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {});
+  // 活动趋势数据（最近12个月）
+  const trendData = Array.from({ length: 12 }, (_, i) => {
+    const month = moment().subtract(i, 'months');
+    return {
+      month: month.format('YYYY-MM'),
+      count: activities.filter(a => 
+        moment(a.startTime).format('YYYY-MM') === month.format('YYYY-MM')
+      ).length
+    };
+  }).reverse();
 
-  const typeData = Object.entries(typeStats).map(([name, value]) => ({
-    name,
-    value
-  }));
+  const pieConfig = {
+    data: statusData,
+    angleField: 'value',
+    colorField: 'type',
+    radius: 0.8,
+    label: {
+      type: 'spider',
+      content: '{name}\n{percentage}',
+    },
+    legend: {
+      position: 'bottom'
+    }
+  };
 
-  // 按月份统计活动数量
-  const monthlyStats = activities.reduce((acc, activity) => {
-    const month = moment(activity.startTime).format('YYYY-MM');
-    acc[month] = (acc[month] || 0) + 1;
-    return acc;
-  }, {});
+  const bankPieConfig = {
+    data: bankChartData,
+    angleField: 'value',
+    colorField: 'type',
+    radius: 0.8,
+    label: {
+      type: 'spider',
+      content: '{name}\n{percentage}',
+    },
+    legend: {
+      position: 'bottom'
+    }
+  };
 
-  const monthlyData = Object.entries(monthlyStats)
-    .sort((a, b) => moment(a[0]).diff(moment(b[0])))
-    .map(([month, count]) => ({
-      month,
-      count
-    }));
+  const lineConfig = {
+    data: trendData,
+    xField: 'month',
+    yField: 'count',
+    smooth: true,
+    point: {
+      size: 5,
+      shape: 'circle',
+    },
+    label: {
+      style: {
+        fill: '#aaa',
+      },
+    },
+    xAxis: {
+      label: {
+        formatter: (v) => moment(v).format('MM月')
+      }
+    }
+  };
 
   return (
-    <div>
-      <Row gutter={[16, 16]}>
-        <Col span={12}>
+    <div style={{ marginBottom: 24 }}>
+      <Row gutter={16}>
+        <Col span={8}>
+          <Card title="活动状态分布">
+            <Pie {...pieConfig} />
+          </Card>
+        </Col>
+        <Col span={8}>
           <Card title="银行活动分布">
-            <PieChart width={400} height={300}>
-              <Pie
-                data={bankData}
-                cx={200}
-                cy={150}
-                labelLine={true}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-                label={({ name, percent }) => 
-                  `${name}: ${(percent * 100).toFixed(0)}%`
-                }
-              >
-                {bankData.map((entry, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
+            <Pie {...bankPieConfig} />
           </Card>
         </Col>
-        <Col span={12}>
-          <Card title="活动类型分布">
-            <PieChart width={400} height={300}>
-              <Pie
-                data={typeData}
-                cx={200}
-                cy={150}
-                labelLine={true}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-                label={({ name, percent }) => 
-                  `${name}: ${(percent * 100).toFixed(0)}%`
-                }
-              >
-                {typeData.map((entry, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </Card>
-        </Col>
-        <Col span={24}>
-          <Card title="活动数量月度趋势">
-            <BarChart
-              width={900}
-              height={300}
-              data={monthlyData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="count" name="活动数量" fill="#8884d8" />
-            </BarChart>
+        <Col span={8}>
+          <Card title="活动数量趋势">
+            <Line {...lineConfig} />
           </Card>
         </Col>
       </Row>

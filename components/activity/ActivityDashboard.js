@@ -23,6 +23,7 @@ export default function ActivityDashboard() {
   const [showCharts, setShowCharts] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewMode, setViewMode] = useState('list');
+  const [editingActivity, setEditingActivity] = useState(null);
 
   useEffect(() => {
     fetchActivities();
@@ -228,6 +229,31 @@ export default function ActivityDashboard() {
     });
   };
 
+  const handleEdit = (activity) => {
+    setEditingActivity(activity);
+    setIsModalVisible(true);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`/api/activities/${id}`, {
+        method: 'DELETE',
+      });
+      
+      const result = await res.json();
+      
+      if (result.success) {
+        message.success('删除成功');
+        fetchActivities();
+      } else {
+        throw new Error(result.error || '删除失败');
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      message.error(error.message || '删除失败');
+    }
+  };
+
   return (
     <div style={{ padding: '24px' }}>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
@@ -285,6 +311,8 @@ export default function ActivityDashboard() {
               activities={(activities || []).filter(a => a.status === 1)}
               loading={loading}
               onStatusChange={handleStatusChange}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
               selectedIds={selectedIds}
               onSelectChange={handleSelectChange}
             />
@@ -294,6 +322,8 @@ export default function ActivityDashboard() {
               activities={(activities || []).filter(a => a.status === 0)}
               loading={loading}
               onStatusChange={handleStatusChange}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
               selectedIds={selectedIds}
               onSelectChange={handleSelectChange}
             />
@@ -303,6 +333,8 @@ export default function ActivityDashboard() {
               activities={(activities || []).filter(a => a.status === 2)}
               loading={loading}
               onStatusChange={handleStatusChange}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
               selectedIds={selectedIds}
               onSelectChange={handleSelectChange}
             />
@@ -313,13 +345,19 @@ export default function ActivityDashboard() {
       )}
 
       <Modal
-        title="添加新活动"
+        title={editingActivity ? "编辑活动" : "添加新活动"}
         open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        onCancel={() => {
+          setIsModalVisible(false);
+          setEditingActivity(null);
+        }}
         footer={null}
-        width={600}
+        width={800}
       >
-        <ActivityForm onSubmit={handleAddActivity} />
+        <ActivityForm 
+          onSubmit={editingActivity ? handleEdit : handleAddActivity}
+          initialValues={editingActivity}
+        />
       </Modal>
     </div>
   );

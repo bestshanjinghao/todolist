@@ -1,11 +1,18 @@
-import { List, Card, Tag, Space, Button, Checkbox } from 'antd';
-import { CheckOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { List, Card, Tag, Space, Button, Checkbox, Popconfirm, Tooltip } from 'antd';
+import { 
+  CheckOutlined, 
+  ClockCircleOutlined, 
+  EditOutlined, 
+  DeleteOutlined 
+} from '@ant-design/icons';
 import moment from 'moment';
 
 export default function ActivityList({ 
   activities, 
   loading, 
   onStatusChange,
+  onEdit,
+  onDelete,
   selectedIds,
   onSelectChange 
 }) {
@@ -21,6 +28,66 @@ export default function ActivityList({
 
   const formatDate = (dateString) => {
     return moment(dateString).format('YYYY-MM-DD HH:mm');
+  };
+
+  const getActionButtons = (activity) => {
+    const actions = [
+      <Tooltip title="编辑活动" key="edit">
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => onEdit(activity)}
+        >
+          编辑111
+        </Button>
+      </Tooltip>,
+      <Popconfirm
+        key="delete"
+        title="确定要删除这个活动吗？"
+        description="删除后不可恢复，请谨慎操作。"
+        onConfirm={() => onDelete(activity.id)}
+        okText="确定"
+        cancelText="取消"
+      >
+        <Tooltip title="删除活动">
+          <Button
+            type="link"
+            danger
+            icon={<DeleteOutlined />}
+          >
+            删除
+          </Button>
+        </Tooltip>
+      </Popconfirm>
+    ];
+
+    if (activity.status !== 2) {
+      actions.unshift(
+        <Tooltip title="标记为已完成" key="complete">
+          <Button 
+            type="primary" 
+            icon={<CheckOutlined />}
+            onClick={() => onStatusChange(activity.id, 2)}
+          >
+            标记完成
+          </Button>
+        </Tooltip>
+      );
+    } else {
+      actions.unshift(
+        <Tooltip title="标记为进行中" key="uncomplete">
+          <Button 
+            type="default" 
+            icon={<ClockCircleOutlined />}
+            onClick={() => onStatusChange(activity.id, 1)}
+          >
+            标记未完成
+          </Button>
+        </Tooltip>
+      );
+    }
+
+    return actions;
   };
 
   return (
@@ -41,18 +108,9 @@ export default function ActivityList({
               </Space>
             }
             extra={getStatusTag(activity.status)}
-            actions={[
-              <Button 
-                type="primary" 
-                icon={<CheckOutlined />}
-                onClick={() => onStatusChange(activity.id, 2)}
-                disabled={activity.status === 2}
-              >
-                标记完成
-              </Button>
-            ]}
+            actions={getActionButtons(activity)}
           >
-            <Space direction="vertical">
+            <Space direction="vertical" style={{ width: '100%' }}>
               <div>
                 <img 
                   src={activity.bank.logo} 
@@ -61,7 +119,9 @@ export default function ActivityList({
                 />
                 {activity.bank.name}
               </div>
-              <div>奖励：{activity.reward}</div>
+              {activity.reward && (
+                <div>奖励：{activity.reward}</div>
+              )}
               <div>
                 <ClockCircleOutlined style={{ marginRight: 8 }} />
                 开始：{formatDate(activity.startTime)}
@@ -70,6 +130,19 @@ export default function ActivityList({
                 <ClockCircleOutlined style={{ marginRight: 8 }} />
                 截止：{formatDate(activity.endTime)}
               </div>
+              {activity.description && (
+                <div style={{ 
+                  color: '#666', 
+                  fontSize: '14px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical'
+                }}>
+                  {activity.description}
+                </div>
+              )}
             </Space>
           </Card>
         </List.Item>

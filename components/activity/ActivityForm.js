@@ -99,11 +99,10 @@ export default function ActivityForm({ onSubmit, initialValues }) {
       // 处理日期和时间数据
       const data = {
         ...values,
-        startTime: values.startTime ? values.startTime.toDate().toISOString() : null,
-        endTime: values.endTime ? values.endTime.toDate().toISOString() : null,
-        // 只在选择了提醒类型且不是 NONE 时处理提醒时间
+        startTime: moment(values.startTime).format(),
+        endTime: moment(values.endTime).format(),
         reminderTime: values.reminderType !== 'NONE' && values.reminderTime 
-          ? moment(values.reminderTime, 'HH:mm').format('HH:mm')
+          ? moment(values.reminderTime).format('HH:mm')
           : null,
         images: imageUrls.join(','),
         contentImages: contentImageUrls.map(url => ({ url }))
@@ -194,7 +193,17 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             <Form.Item
               name="endTime"
               label="结束时间"
-              rules={[{ required: true, message: '请选择结束时间' }]}
+              rules={[
+                { required: true, message: '请选择结束时间' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value || !getFieldValue('startTime') || moment(value).isAfter(getFieldValue('startTime'))) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error('结束时间必须晚于开始时间'));
+                  },
+                }),
+              ]}
             >
               <DatePicker 
                 showTime 

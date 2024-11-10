@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import moment from 'moment';
 
 export async function GET(request, { params }) {
   try {
@@ -16,15 +17,15 @@ export async function GET(request, { params }) {
     if (activity) {
       const formattedActivity = {
         ...activity,
-        startTime: activity.startTime.toISOString(),
-        endTime: activity.endTime.toISOString(),
-        createdAt: activity.createdAt.toISOString(),
-        updatedAt: activity.updatedAt.toISOString(),
+        startTime: moment(activity.startTime).format(),
+        endTime: moment(activity.endTime).format(),
+        createdAt: moment(activity.createdAt).format(),
+        updatedAt: moment(activity.updatedAt).format(),
         reminders: activity.reminders.map(reminder => ({
           ...reminder,
-          remindTime: reminder.remindTime.toISOString(),
-          createdAt: reminder.createdAt.toISOString(),
-          updatedAt: reminder.updatedAt.toISOString(),
+          remindTime: moment(reminder.remindTime).format(),
+          createdAt: moment(reminder.createdAt).format(),
+          updatedAt: moment(reminder.updatedAt).format(),
         }))
       };
       return NextResponse.json({
@@ -50,18 +51,20 @@ export async function PATCH(request, { params }) {
   try {
     const data = await request.json();
     
+    // 处理日期字段
+    const updateData = { ...data };
     if (data.startTime) {
-      data.startTime = new Date(data.startTime);
+      updateData.startTime = moment(data.startTime).toDate();
     }
     if (data.endTime) {
-      data.endTime = new Date(data.endTime);
+      updateData.endTime = moment(data.endTime).toDate();
     }
 
     const activity = await prisma.activity.update({
       where: {
         id: parseInt(params.id),
       },
-      data,
+      data: updateData,
       include: {
         bank: true,
         reminders: true,
@@ -70,10 +73,10 @@ export async function PATCH(request, { params }) {
 
     const formattedActivity = {
       ...activity,
-      startTime: activity.startTime.toISOString(),
-      endTime: activity.endTime.toISOString(),
-      createdAt: activity.createdAt.toISOString(),
-      updatedAt: activity.updatedAt.toISOString(),
+      startTime: moment(activity.startTime).format(),
+      endTime: moment(activity.endTime).format(),
+      createdAt: moment(activity.createdAt).format(),
+      updatedAt: moment(activity.updatedAt).format(),
     };
 
     return NextResponse.json({
@@ -118,5 +121,73 @@ export async function DELETE(request, { params }) {
       { error: "Failed to delete activity" },
       { status: 500 }
     );
+  }
+}
+
+export async function PUT(request, { params }) {
+  try {
+    const data = await request.json();
+    const { id } = params;
+
+    // 数据验证
+    if (!data.title?.trim()) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '活动标题不能为空' 
+      }, { status: 400 });
+    }
+
+    // 处理日期
+    const startTime = moment(data.startTime);
+    const endTime = moment(data.endTime);
+    
+    if (endTime.isBefore(startTime)) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '结束时间不能早于开始时间' 
+      }, { status: 400 });
+    }
+
+    // 更新活动
+    const activity = await prisma.activity.update({
+      where: { 
+        id: parseInt(id) 
+      },
+      data: {
+        bankId: parseInt(data.bankId),
+        title: data.title.trim(),
+        description: data.description?.trim(),
+        startTime: startTime.toDate(),
+        endTime: endTime.toDate(),
+        status: parseInt(data.status),
+        reminderType: data.reminderType || 'NONE',
+        reminderDay: data.reminderDay ? parseInt(data.reminderDay) : null,
+        reminderDate: data.reminderDate ? parseInt(data.reminderDate) : null,
+        reminderTime: data.reminderTime || null,
+        images: data.images || '',
+        updatedAt: new Date()
+      },
+      include: {
+        bank: true,
+        reminders: true
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...activity,
+        startTime: moment(activity.startTime).format(),
+        endTime: moment(activity.endTime).format(),
+        createdAt: moment(activity.createdAt).format(),
+        updatedAt: moment(activity.updatedAt).format()
+      }
+    });
+  } catch (error) {
+    console.error('Update activity error:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || '更新活动失败'
+    }, { status: 500 });
   }
 } 
