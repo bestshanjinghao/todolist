@@ -113,10 +113,10 @@ export async function POST(request) {
     // 验证日期逻辑
     const startTime = moment(data.startTime);
     const endTime = moment(data.endTime);
-    if (endTime.isBefore(startTime)) {
+    if (!endTime.isSameOrAfter(startTime)) {
       return NextResponse.json({ 
         success: false, 
-        error: '结束时间不能早于开始时间' 
+        error: '结束时间必须等于或晚于开始时间' 
       }, { status: 400 });
     }
 
@@ -132,7 +132,7 @@ export async function POST(request) {
         reminderDay: data.reminderDay ? parseInt(data.reminderDay) : null,
         reminderDate: data.reminderDate ? parseInt(data.reminderDate) : null,
         reminderTime: data.reminderTime || null,
-        images: data.images || ''
+        images: Array.isArray(data.images) ? data.images.join(',') : ''
       },
       include: {
         bank: true

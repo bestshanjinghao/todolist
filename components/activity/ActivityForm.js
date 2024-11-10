@@ -87,14 +87,17 @@ export default function ActivityForm({ onSubmit, initialValues }) {
 
   const handleSubmit = async (values) => {
     try {
-      // 处理图片数据
+      console.log('Form values before processing:', values);
+
+      // 处理图片数据 - 修改这部分逻辑
       const imageUrls = values.images?.fileList
-        ? values.images.fileList.map(file => file.response?.data?.url || file.url).filter(Boolean)
+        ? values.images.fileList
+            .filter(file => file.status === 'done')
+            .map(file => file.response?.data?.url)
+            .filter(Boolean)
         : [];
 
-      const contentImageUrls = values.contentImages?.fileList
-        ? values.contentImages.fileList.map(file => file.response?.data?.url || file.url).filter(Boolean)
-        : [];
+      console.log('Processed image URLs:', imageUrls); // 添加日志
 
       // 处理日期和时间数据
       const data = {
@@ -104,9 +107,11 @@ export default function ActivityForm({ onSubmit, initialValues }) {
         reminderTime: values.reminderType !== 'NONE' && values.reminderTime 
           ? moment(values.reminderTime).format('HH:mm')
           : null,
-        images: imageUrls.join(','),
-        contentImages: contentImageUrls.map(url => ({ url }))
+        images: imageUrls, // 直接传递 URL 数组
+        contentImages: []
       };
+
+      console.log('Final form data:', data);
 
       await onSubmit(data);
       if (!initialValues) {
@@ -193,14 +198,22 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             <Form.Item
               name="endTime"
               label="结束时间"
+              dependencies={['startTime']}
               rules={[
                 { required: true, message: '请选择结束时间' },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
-                    if (!value || !getFieldValue('startTime') || moment(value).isAfter(getFieldValue('startTime'))) {
+                    const startTime = getFieldValue('startTime');
+                    if (!value || !startTime) {
                       return Promise.resolve();
                     }
-                    return Promise.reject(new Error('结束时间必须晚于开始时间'));
+                    
+                    // 使用 isSameOrAfter 允许相同时间
+                    if (moment(value).isSameOrAfter(startTime)) {
+                      return Promise.resolve();
+                    }
+                    
+                    return Promise.reject(new Error('结束时间必须等于或晚于开始时间'));
                   },
                 }),
               ]}
@@ -209,6 +222,10 @@ export default function ActivityForm({ onSubmit, initialValues }) {
                 showTime 
                 style={{ width: '100%' }}
                 placeholder="请选择结束时间"
+                disabledDate={(current) => {
+                  const startTime = form.getFieldValue('startTime');
+                  return startTime && current && current < moment(startTime).startOf('day');
+                }}
               />
             </Form.Item>
           </Col>
@@ -242,6 +259,23 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             multiple
             listType="picture-card"
             accept="image/*"
+            onChange={(info) => {
+              console.log('Upload onChange:', info);
+              if (info.file.status === 'done') {
+                message.success(`${info.file.name} 上传成功`);
+                // 更新表单中的图片值
+                const fileList = info.fileList.map(file => ({
+                  uid: file.uid,
+                  name: file.name,
+                  status: file.status,
+                  url: file.response?.data?.url,
+                  response: file.response
+                }));
+                form.setFieldsValue({ images: { fileList } });
+              } else if (info.file.status === 'error') {
+                message.error(`${info.file.name} 上传失败`);
+              }
+            }}
           >
             <p className="ant-upload-drag-icon">
               <PlusOutlined />

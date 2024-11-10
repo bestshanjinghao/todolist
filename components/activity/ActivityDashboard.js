@@ -106,7 +106,10 @@ export default function ActivityDashboard() {
   const handleAddActivity = async (values) => {
     try {
       const imageUrls = values.images?.fileList
-        ? values.images.fileList.map(file => file.response?.data?.url || file.url).filter(Boolean)
+        ? values.images.fileList
+            .filter(file => file.status === 'done')
+            .map(file => file.response?.data?.url || file.url)
+            .filter(Boolean)
         : [];
 
       const formData = {
@@ -118,6 +121,8 @@ export default function ActivityDashboard() {
         status: values.status || 0,
         images: imageUrls.join(',')
       };
+
+      console.log('Submitting form data:', formData);
 
       const res = await fetch('/api/activities', {
         method: 'POST',
@@ -241,7 +246,10 @@ export default function ActivityDashboard() {
       }
 
       const imageUrls = values.images?.fileList
-        ? values.images.fileList.map(file => file.response?.data?.url || file.url).filter(Boolean)
+        ? values.images.fileList
+            .filter(file => file.status === 'done')
+            .map(file => file.response?.data?.url || file.url)
+            .filter(Boolean)
         : [];
 
       const formData = {
@@ -249,13 +257,13 @@ export default function ActivityDashboard() {
         startTime: moment(values.startTime).format(),
         endTime: moment(values.endTime).format(),
         reminderTime: values.reminderType !== 'NONE' && values.reminderTime 
-          ? moment(values.reminderTime).format('HH:mm')  // 使用 HH:mm 格式
+          ? moment(values.reminderTime).format('HH:mm')
           : null,
         bankId: parseInt(values.bankId),
         images: imageUrls.join(',')
       };
 
-      console.log('Submitting form data:', formData); // 添加日志以便调试
+      console.log('Submitting edit form data:', formData);
 
       const res = await fetch(`/api/activities/${editingActivity.id}`, {
         method: 'PUT',
