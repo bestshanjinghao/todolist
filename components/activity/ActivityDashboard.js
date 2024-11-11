@@ -10,6 +10,8 @@ import ActivitySearch from './ActivitySearch';
 import ActivityCharts from './ActivityCharts';
 import ActivityCalendar from './ActivityCalendar';
 import moment from 'moment';
+import dayjs from 'dayjs';
+
 
 const { TabPane } = Tabs;
 
@@ -244,23 +246,18 @@ export default function ActivityDashboard() {
       if (!editingActivity?.id) {
         throw new Error('没有选中要编辑的活动');
       }
+      const imageUrls = values.images
 
-      const imageUrls = values.images?.fileList
-        ? values.images.fileList
-            .filter(file => file.status === 'done')
-            .map(file => file.response?.data?.url || file.url)
-            .filter(Boolean)
-        : [];
-
+      debugger
       const formData = {
         ...values,
         startTime: moment(values.startTime).format(),
         endTime: moment(values.endTime).format(),
         reminderTime: values.reminderType !== 'NONE' && values.reminderTime 
-          ? moment(values.reminderTime).format('HH:mm')
+          ? dayjs(values.reminderTime).format('HH:mm')
           : null,
         bankId: parseInt(values.bankId),
-        images: imageUrls.join(',')
+        images: imageUrls
       };
 
       console.log('Submitting edit form data:', formData);

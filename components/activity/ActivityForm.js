@@ -11,11 +11,17 @@ import {
   Col,
   Space,
   Radio,
-  message
+  message,
+  Image
 } from 'antd';
 import { useState, useEffect } from 'react';
-import moment from 'moment';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
+
+dayjs.extend(customParseFormat);
+dayjs.extend(isSameOrAfter);
 
 const uploadProps = {
   name: 'file',
@@ -53,15 +59,21 @@ export default function ActivityForm({ onSubmit, initialValues }) {
   const [banks, setBanks] = useState([]);
   const [form] = Form.useForm();
   const [reminderType, setReminderType] = useState('NONE');
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewGroup, setPreviewGroup] = useState([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   useEffect(() => {
     fetchBanks();
     if (initialValues) {
+      console.log('Initial reminderTime:', initialValues.reminderTime);
       const formData = {
         ...initialValues,
-        startTime: moment(initialValues.startTime),
-        endTime: moment(initialValues.endTime),
-        reminderTime: initialValues.reminderTime ? moment(initialValues.reminderTime, 'HH:mm') : null,
+        startTime: dayjs(initialValues.startTime),
+        endTime: dayjs(initialValues.endTime),
+        reminderTime: initialValues.reminderTime 
+          ? dayjs(initialValues.reminderTime, 'HH:mm')
+          : null,
         images: initialValues.images
           ? initialValues.images.split(',').map(url => ({
               uid: url,
@@ -71,6 +83,7 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             }))
           : [],
       };
+      console.log('Formatted reminderTime:', formData.reminderTime);
       form.setFieldsValue(formData);
     }
   }, [initialValues, form]);
@@ -87,27 +100,27 @@ export default function ActivityForm({ onSubmit, initialValues }) {
 
   const handleSubmit = async (values) => {
     try {
-      console.log('Form values before processing:', values);
-
-      // 处理图片数据 - 修改这部分逻辑
-      const imageUrls = values.images?.fileList
-        ? values.images.fileList
-            .filter(file => file.status === 'done')
-            .map(file => file.response?.data?.url)
-            .filter(Boolean)
-        : [];
-
-      console.log('Processed image URLs:', imageUrls); // 添加日志
+      console.log('Raw form values:', values);
+      
+      // 处理图片数据
+      const imageUrls = values.images
+        .map(image => {
+          if (image.url) return image.url;
+          return image.response?.data?.url;
+        })
+        .filter(Boolean);
+      
+      const imagesString = imageUrls.join(',');
 
       // 处理日期和时间数据
       const data = {
         ...values,
-        startTime: moment(values.startTime).format(),
-        endTime: moment(values.endTime).format(),
+        startTime: dayjs(values.startTime).format(),
+        endTime: dayjs(values.endTime).format(),
         reminderTime: values.reminderType !== 'NONE' && values.reminderTime 
-          ? moment(values.reminderTime).format('HH:mm')
+          ? dayjs(values.reminderTime).format('HH:mm')
           : null,
-        images: imageUrls, // 直接传递 URL 数组
+        images: imagesString,
         contentImages: []
       };
 
@@ -135,13 +148,26 @@ export default function ActivityForm({ onSubmit, initialValues }) {
     form.resetFields(['reminderDay', 'reminderDate', 'reminderTime']);
   };
 
+  const handlePreview = async (file) => {
+    const currentFileList = form.getFieldValue('images');
+    const previewUrls = currentFileList.map(f => ({
+      src: f.url || f.response?.data?.url,
+      alt: f.name
+    }));
+    
+    const currentIndex = currentFileList.findIndex(f => f.uid === file.uid);
+    setPreviewGroup(previewUrls);
+    setPreviewIndex(currentIndex);
+    setPreviewVisible(true);
+  };
+
   return (
     <Form
       form={form}
       layout="vertical"
       onFinish={handleSubmit}
       initialValues={{
-        startTime: moment(),
+        startTime: dayjs(),
         reminderType: 'NONE',
         images: [],
       }}
@@ -189,7 +215,7 @@ export default function ActivityForm({ onSubmit, initialValues }) {
                 showTime 
                 style={{ width: '100%' }}
                 placeholder="请选择开始时间"
-                disabledDate={(current) => current && current < moment().startOf('day')}
+                disabledDate={(current) => current && current < dayjs().startOf('day')}
               />
             </Form.Item>
           </Col>
@@ -208,8 +234,7 @@ export default function ActivityForm({ onSubmit, initialValues }) {
                       return Promise.resolve();
                     }
                     
-                    // 使用 isSameOrAfter 允许相同时间
-                    if (moment(value).isSameOrAfter(startTime)) {
+                    if (value.isSameOrAfter(startTime)) {
                       return Promise.resolve();
                     }
                     
@@ -224,7 +249,7 @@ export default function ActivityForm({ onSubmit, initialValues }) {
                 placeholder="请选择结束时间"
                 disabledDate={(current) => {
                   const startTime = form.getFieldValue('startTime');
-                  return startTime && current && current < moment(startTime).startOf('day');
+                  return startTime && current && current < dayjs(startTime).startOf('day');
                 }}
               />
             </Form.Item>
@@ -259,19 +284,19 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             multiple
             listType="picture-card"
             accept="image/*"
+            onPreview={handlePreview}
             onChange={(info) => {
               console.log('Upload onChange:', info);
               if (info.file.status === 'done') {
                 message.success(`${info.file.name} 上传成功`);
-                // 更新表单中的图片值
                 const fileList = info.fileList.map(file => ({
                   uid: file.uid,
                   name: file.name,
                   status: file.status,
-                  url: file.response?.data?.url,
+                  url: file.url || file.response?.data?.url,
                   response: file.response
                 }));
-                form.setFieldsValue({ images: { fileList } });
+                form.setFieldsValue({ images: fileList });
               } else if (info.file.status === 'error') {
                 message.error(`${info.file.name} 上传失败`);
               }
@@ -349,32 +374,58 @@ export default function ActivityForm({ onSubmit, initialValues }) {
               format="HH:mm"
               style={{ width: '100%' }}
               placeholder="请选择提醒时间"
+              onChange={(time) => {
+                console.log('TimePicker onChange:', time);
+                console.log('TimePicker value:', time ? time.format('HH:mm') : null);
+                form.setFieldsValue({ 
+                  reminderTime: time 
+                });
+              }}
             />
           </Form.Item>
         )}
       </Card>
-
-      <Form.Item
-        name="contentImages"
-        label="活动图片"
-        valuePropName="fileList"
-        getValueFromEvent={e => {
-          if (Array.isArray(e)) {
-            return e;
-          }
-          return e?.fileList;
-        }}
-      >
-        <Upload {...uploadProps} listType="picture-card">
-          <Button icon={<UploadOutlined />}>上传图片</Button>
-        </Upload>
-      </Form.Item>
 
       <Form.Item>
         <Button type="primary" htmlType="submit">
           保存活动11
         </Button>
       </Form.Item>
+
+      <div style={{ display: 'none' }}>
+        <Image.PreviewGroup
+          preview={{
+            visible: previewVisible,
+            current: previewIndex,
+            onVisibleChange: (vis) => setPreviewVisible(vis),
+            countRender: (current, total) => `${current} / ${total}`,
+            toolbarRender: (
+              _,
+              {
+                transform: { scale },
+                actions: { onZoomIn, onZoomOut, onRotateLeft, onRotateRight }
+              }
+            ) => (
+              <Space size={12} className="toolbar-wrapper">
+                <Button onClick={onZoomIn}>放大</Button>
+                <Button onClick={onZoomOut}>缩小</Button>
+                <Button onClick={onRotateLeft}>向左旋转</Button>
+                <Button onClick={onRotateRight}>向右旋转</Button>
+                <span>缩放比例: {Math.round(scale * 100)}%</span>
+              </Space>
+            )
+          }}
+        >
+          {previewGroup.map((item, index) => (
+            <Image
+              key={index}
+              src={item.src}
+              alt={item.alt}
+              style={{ display: 'none' }}
+            />
+          ))}
+        </Image.PreviewGroup>
+      </div>
     </Form>
   );
 } 
