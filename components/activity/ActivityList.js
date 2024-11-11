@@ -38,7 +38,7 @@ export default function ActivityList({
           icon={<EditOutlined />}
           onClick={() => onEdit(activity)}
         >
-          编辑111
+          编辑
         </Button>
       </Tooltip>,
       <Popconfirm

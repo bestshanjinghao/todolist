@@ -27,30 +27,12 @@ export default function ActivityDashboard() {
   const [viewMode, setViewMode] = useState('list');
   const [editingActivity, setEditingActivity] = useState(null);
 
-  useEffect(() => {
-    fetchActivities();
-    fetchBanks();
-  }, []);
-
-  const fetchBanks = async () => {
-    try {
-      const res = await fetch('/api/banks');
-      const data = await res.json();
-      setBanks(data);
-    } catch (error) {
-      console.error('Failed to fetch banks:', error);
-    }
-  };
-
-  const handleSearch = (searchFilters) => {
-    setFilters(searchFilters);
-    fetchActivities(searchFilters);
-  };
-
   const fetchActivities = useCallback(async (filters = {}) => {
     try {
+      console.log('fetchActivities 被调用, 调用栈:', new Error().stack);
       setLoading(true);
       setError(null);
+      
       const queryParams = new URLSearchParams();
       if (filters.keyword) queryParams.append('keyword', filters.keyword);
       if (filters.bankId) queryParams.append('bankId', filters.bankId);
@@ -68,6 +50,7 @@ export default function ActivityDashboard() {
         throw new Error('数据格式不正确');
       }
     } catch (err) {
+      console.error('获取活动列表失败:', err);
       setError(err.message);
       message.error('获取活动列表失败');
     } finally {
@@ -76,8 +59,25 @@ export default function ActivityDashboard() {
   }, []);
 
   useEffect(() => {
+    console.log('Dashboard useEffect 执行');
     fetchActivities();
+    fetchBanks();
   }, [fetchActivities]);
+
+  const fetchBanks = async () => {
+    try {
+      const res = await fetch('/api/banks');
+      const data = await res.json();
+      setBanks(data);
+    } catch (error) {
+      console.error('Failed to fetch banks:', error);
+    }
+  };
+
+  const handleSearch = (searchFilters) => {
+    setFilters(searchFilters);
+    fetchActivities(searchFilters);
+  };
 
   if (error) {
     return <div>Error: {error}</div>;

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import moment from 'moment';
 
 export async function GET(request) {
+  debugger
   try {
     const activities = await prisma.activity.findMany({
       include: {
@@ -20,7 +21,7 @@ export async function GET(request) {
   } catch (error) {
     console.error('获取活动列表失败:', error);
     return NextResponse.json(
-      { success: false, error: '获取活动列表失败' },
+      { success: false, error },
       { status: 500 }
     );
   }
@@ -53,7 +54,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('创建活动失败:', error);
     return NextResponse.json(
-      { error: '创建活动失败' },
+      { error },
       { status: 500 }
     );
   }
