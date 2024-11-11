@@ -11,7 +11,6 @@ import {
   DeleteOutlined, BellOutlined, ArrowLeftOutlined 
 } from '@ant-design/icons';
 import ActivityForm from '@/components/activity/ActivityForm';
-import ReminderForm from '@/components/activity/ReminderForm';
 
 const { Content } = Layout;
 
@@ -205,15 +204,6 @@ export default function ActivityDetail({ params }) {
           onSubmit={handleEdit}
           initialValues={activity}
         />
-      </Modal>
-
-      <Modal
-        title="设置提醒"
-        open={isReminderModalVisible}
-        onCancel={() => setIsReminderModalVisible(false)}
-        footer={null}
-      >
-        <ReminderForm onSubmit={handleAddReminder} />
       </Modal>
     </Content>
   );

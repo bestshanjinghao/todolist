@@ -4,7 +4,6 @@ import { ConfigProvider } from 'antd';
 import locale from 'antd/locale/zh_CN';
 import 'moment/locale/zh-cn';
 import moment from 'moment';
-import { startScheduler } from '@/lib/scheduler';
 
 moment.locale('zh-cn');
 
@@ -16,10 +15,6 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  // 在服务器端启动定时任务
-  if (typeof window === 'undefined') {
-    startScheduler();
-  }
 
   return (
     <html lang="zh-CN">
