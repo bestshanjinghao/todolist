@@ -26,19 +26,12 @@ model Activity {
   endTime      DateTime  // 结束时间
   status       Int       @default(0)  // 活动状态：0-未开始，1-进行中，2-已结束
   
-  // 提醒设置
-  reminderType String    @default("NONE")  // NONE, DAILY, WEEKLY, MONTHLY
-  reminderDay  Int?      // 每周提醒：星期几 (0-6)
-  reminderDate Int?      // 每月提醒：几号 (1-31)
-  reminderTime String?   // 提醒时间 (HH:mm)
-  
   // 图片相关
   images       String?   // 活动图片URLs，用逗号分隔
   contentImages ActivityImage[]
 
   // 关联
   bank         Bank      @relation(fields: [bankId], references: [id])
-  reminders    Reminder[]
   
   // 时间戳
   createdAt    DateTime  @default(now())
@@ -55,17 +48,4 @@ model ActivityImage {
   activity   Activity @relation(fields: [activityId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-}
-
-model Reminder {
-  id         Int      @id @default(autoincrement())
-  activityId Int      // 关联的活动ID
-  remindTime DateTime // 提醒时间
-  status     Int      @default(0)  // 提醒状态：0-未提醒，1-已提醒
-  activity   Activity @relation(fields: [activityId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([activityId])
-  @@index([remindTime])
 } 

@@ -10,7 +10,6 @@ export async function GET(request, { params }) {
       },
       include: {
         bank: true,
-        reminders: true,
       },
     });
     
@@ -21,12 +20,6 @@ export async function GET(request, { params }) {
         endTime: moment(activity.endTime).format(),
         createdAt: moment(activity.createdAt).format(),
         updatedAt: moment(activity.updatedAt).format(),
-        reminders: activity.reminders.map(reminder => ({
-          ...reminder,
-          remindTime: moment(reminder.remindTime).format(),
-          createdAt: moment(reminder.createdAt).format(),
-          updatedAt: moment(reminder.updatedAt).format(),
-        }))
       };
       return NextResponse.json({
         success: true,
@@ -67,7 +60,6 @@ export async function PATCH(request, { params }) {
       data: updateData,
       include: {
         bank: true,
-        reminders: true,
       }
     });
 
@@ -126,75 +118,37 @@ export async function DELETE(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    const data = await request.json();
     const { id } = params;
-
-    // 数据验证
-    if (!data.title?.trim()) {
-      return NextResponse.json({ 
-        success: false, 
-        error: '活动标题不能为空' 
-      }, { status: 400 });
-    }
-
-    // 处理日期
-    const startTime = moment(data.startTime);
-    const endTime = moment(data.endTime);
+    const data = await request.json();
     
-    if (endTime.isBefore(startTime)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: '结束时间不能早于开始时间' 
-      }, { status: 400 });
-    }
-
-    // 构建更新数据
-    const updateData = {
-      title: data.title.trim(),
-      description: data.description?.trim(),
-      startTime: startTime.toDate(),
-      endTime: endTime.toDate(),
-      status: data.status !== undefined ? parseInt(data.status) : undefined,
-      reminderType: data.reminderType || 'NONE',
-      reminderDay: data.reminderDay ? parseInt(data.reminderDay) : null,
-      reminderDate: data.reminderDate ? parseInt(data.reminderDate) : null,
-      reminderTime: data.reminderTime || null,
-      images: data.images || '',
-      updatedAt: new Date(),
-      bank: {
-        connect: {
-          id: parseInt(data.bankId)
-        }
-      }
-    };
-
-    // 更新活动
     const activity = await prisma.activity.update({
-      where: { 
-        id: parseInt(id) 
+      where: {
+        id: parseInt(id)
       },
-      data: updateData,
+      data: {
+        title: data.title,
+        description: data.description,
+        startTime: new Date(data.startTime),
+        endTime: new Date(data.endTime),
+        status: data.status,
+        images: data.images,
+        bank: {
+          connect: {
+            id: data.bankId
+          }
+        }
+      },
       include: {
         bank: true,
-        reminders: true
       }
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...activity,
-        startTime: moment(activity.startTime).format(),
-        endTime: moment(activity.endTime).format(),
-        createdAt: moment(activity.createdAt).format(),
-        updatedAt: moment(activity.updatedAt).format()
-      }
-    });
+    return NextResponse.json(activity);
   } catch (error) {
-    console.error('Update activity error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message || '更新活动失败'
-    }, { status: 500 });
+    console.error('更新活动失败:', error);
+    return NextResponse.json(
+      { error: '更新活动失败' },
+      { status: 500 }
+    );
   }
 } 

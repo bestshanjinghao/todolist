@@ -58,7 +58,6 @@ const uploadProps = {
 export default function ActivityForm({ onSubmit, initialValues }) {
   const [banks, setBanks] = useState([]);
   const [form] = Form.useForm();
-  const [reminderType, setReminderType] = useState('NONE');
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewGroup, setPreviewGroup] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -66,14 +65,10 @@ export default function ActivityForm({ onSubmit, initialValues }) {
   useEffect(() => {
     fetchBanks();
     if (initialValues) {
-      console.log('Initial reminderTime:', initialValues.reminderTime);
       const formData = {
         ...initialValues,
         startTime: dayjs(initialValues.startTime),
         endTime: dayjs(initialValues.endTime),
-        reminderTime: initialValues.reminderTime 
-          ? dayjs(initialValues.reminderTime, 'HH:mm')
-          : null,
         images: initialValues.images
           ? initialValues.images.split(',').map(url => ({
               uid: url,
@@ -83,7 +78,6 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             }))
           : [],
       };
-      console.log('Formatted reminderTime:', formData.reminderTime);
       form.setFieldsValue(formData);
     }
   }, [initialValues, form]);
@@ -102,7 +96,6 @@ export default function ActivityForm({ onSubmit, initialValues }) {
     try {
       console.log('Raw form values:', values);
       
-      // 处理图片数据
       const imageUrls = values.images
         .map(image => {
           if (image.url) return image.url;
@@ -112,14 +105,10 @@ export default function ActivityForm({ onSubmit, initialValues }) {
       
       const imagesString = imageUrls.join(',');
 
-      // 处理日期和时间数据
       const data = {
         ...values,
         startTime: dayjs(values.startTime).format(),
         endTime: dayjs(values.endTime).format(),
-        reminderTime: values.reminderType !== 'NONE' && values.reminderTime 
-          ? dayjs(values.reminderTime).format('HH:mm')
-          : null,
         images: imagesString,
         contentImages: []
       };
@@ -143,11 +132,6 @@ export default function ActivityForm({ onSubmit, initialValues }) {
     return e?.fileList || [];
   };
 
-  const handleReminderTypeChange = (e) => {
-    setReminderType(e.target.value);
-    form.resetFields(['reminderDay', 'reminderDate', 'reminderTime']);
-  };
-
   const handlePreview = async (file) => {
     const currentFileList = form.getFieldValue('images');
     const previewUrls = currentFileList.map(f => ({
@@ -168,7 +152,6 @@ export default function ActivityForm({ onSubmit, initialValues }) {
       onFinish={handleSubmit}
       initialValues={{
         startTime: dayjs(),
-        reminderType: 'NONE',
         images: [],
       }}
     >
@@ -311,84 +294,9 @@ export default function ActivityForm({ onSubmit, initialValues }) {
         </Form.Item>
       </Card>
 
-      <Card title="提醒设置">
-        <Form.Item
-          name="reminderType"
-          label="提醒类型"
-        >
-          <Radio.Group onChange={handleReminderTypeChange}>
-            <Radio.Button value="NONE">不提醒</Radio.Button>
-            <Radio.Button value="DAILY">每日提醒</Radio.Button>
-            <Radio.Button value="WEEKLY">每周提醒</Radio.Button>
-            <Radio.Button value="MONTHLY">每月提醒</Radio.Button>
-          </Radio.Group>
-        </Form.Item>
-
-        {reminderType === 'WEEKLY' && (
-          <Form.Item
-            name="reminderDay"
-            label="提醒星期"
-            rules={[{ required: true, message: '请选择提醒星期' }]}
-          >
-            <Select placeholder="请选择提醒星期">
-              {[
-                { value: 1, label: '周一' },
-                { value: 2, label: '周二' },
-                { value: 3, label: '周三' },
-                { value: 4, label: '周四' },
-                { value: 5, label: '周五' },
-                { value: 6, label: '周六' },
-                { value: 0, label: '周日' },
-              ].map(day => (
-                <Select.Option key={day.value} value={day.value}>
-                  {day.label}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-        )}
-
-        {reminderType === 'MONTHLY' && (
-          <Form.Item
-            name="reminderDate"
-            label="提醒日期"
-            rules={[{ required: true, message: '请选择提醒日期' }]}
-          >
-            <Select placeholder="请选择提醒日期">
-              {Array.from({ length: 31 }, (_, i) => (
-                <Select.Option key={i + 1} value={i + 1}>
-                  {i + 1}号
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-        )}
-
-        {reminderType !== 'NONE' && (
-          <Form.Item
-            name="reminderTime"
-            label="提醒时间"
-            rules={[{ required: true, message: '请选择提醒时间' }]}
-          >
-            <TimePicker 
-              format="HH:mm"
-              style={{ width: '100%' }}
-              placeholder="请选择提醒时间"
-              onChange={(time) => {
-                console.log('TimePicker onChange:', time);
-                console.log('TimePicker value:', time ? time.format('HH:mm') : null);
-                form.setFieldsValue({ 
-                  reminderTime: time 
-                });
-              }}
-            />
-          </Form.Item>
-        )}
-      </Card>
-
       <Form.Item>
         <Button type="primary" htmlType="submit">
-          保存活动11
+          保存活动
         </Button>
       </Form.Item>
 

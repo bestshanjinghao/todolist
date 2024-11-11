@@ -90,6 +90,44 @@ export default function ActivityList({
     return actions;
   };
 
+  const columns = [
+    {
+      title: '活动名称',
+      dataIndex: 'title',
+      key: 'title',
+    },
+    {
+      title: '所属银行',
+      dataIndex: ['bank', 'name'],
+      key: 'bankName',
+    },
+    {
+      title: '开始时间',
+      dataIndex: 'startTime',
+      key: 'startTime',
+      render: (text) => moment(text).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    {
+      title: '结束时间',
+      dataIndex: 'endTime',
+      key: 'endTime',
+      render: (text) => moment(text).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => {
+        const statusMap = {
+          0: { text: '未开始', color: 'default' },
+          1: { text: '进行中', color: 'processing' },
+          2: { text: '已结束', color: 'success' },
+        };
+        return <Tag color={statusMap[status].color}>{statusMap[status].text}</Tag>;
+      },
+    },
+  ];
+
   return (
     <List
       grid={{ gutter: 16, column: 3 }}

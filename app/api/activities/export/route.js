@@ -3,71 +3,65 @@ import ExcelJS from 'exceljs';
 import { prisma } from '@/lib/prisma';
 import moment from 'moment';
 
-export async function GET(request) {
+export async function GET() {
   try {
     const activities = await prisma.activity.findMany({
       include: {
         bank: true,
-        reminders: true
       },
-      orderBy: [
-        { status: 'asc' },
-        { endTime: 'asc' }
-      ]
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('活动列表');
-    
+
     // 设置表头
     worksheet.columns = [
       { header: '活动名称', key: 'title', width: 30 },
-      { header: '银行', key: 'bank', width: 20 },
-      { header: '状态', key: 'status', width: 15 },
+      { header: '所属银行', key: 'bankName', width: 20 },
       { header: '开始时间', key: 'startTime', width: 20 },
       { header: '结束时间', key: 'endTime', width: 20 },
-      { header: '提醒类型', key: 'reminderType', width: 15 },
-      { header: '提醒时间', key: 'reminderTime', width: 15 },
-      { header: '描述', key: 'description', width: 50 }
+      { header: '状态', key: 'status', width: 15 },
+      { header: '描述', key: 'description', width: 50 },
     ];
 
     // 添加数据
     activities.forEach(activity => {
       worksheet.addRow({
         title: activity.title,
-        bank: activity.bank.name,
-        status: ['未开始', '进行中', '已完成', '已过期'][activity.status],
-        startTime: moment(activity.startTime).format('YYYY-MM-DD HH:mm'),
-        endTime: moment(activity.endTime).format('YYYY-MM-DD HH:mm'),
-        reminderType: {
-          'NONE': '不提醒',
-          'DAILY': '每日提醒',
-          'WEEKLY': '每周提醒',
-          'MONTHLY': '每月提醒'
-        }[activity.reminderType],
-        reminderTime: activity.reminderTime || '-',
-        description: activity.description || '-'
+        bankName: activity.bank.name,
+        startTime: moment(activity.startTime).format('YYYY-MM-DD HH:mm:ss'),
+        endTime: moment(activity.endTime).format('YYYY-MM-DD HH:mm:ss'),
+        status: getStatusText(activity.status),
+        description: activity.description,
       });
     });
 
-    // 设置样式
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-
     // 生成 Excel 文件
     const buffer = await workbook.xlsx.writeBuffer();
-    
-    return new NextResponse(buffer, {
+
+    return new Response(buffer, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename=activities-${moment().format('YYYY-MM-DD')}.xlsx`
-      }
+        'Content-Disposition': 'attachment; filename=activities.xlsx',
+      },
     });
   } catch (error) {
-    console.error('Export error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: '导出失败' 
-    }, { status: 500 });
+    console.error('Export failed:', error);
+    return NextResponse.json(
+      { error: 'Export failed' },
+      { status: 500 }
+    );
   }
+}
+
+function getStatusText(status) {
+  const statusMap = {
+    0: '未开始',
+    1: '进行中',
+    2: '已结束',
+  };
+  return statusMap[status] || '未知';
 } 

@@ -105,47 +105,32 @@ export default function ActivityDashboard() {
     }
   };
 
-  const handleAddActivity = async (values) => {
+  const handleAdd = async (data) => {
     try {
-      const imageUrls = values.images?.fileList
-        ? values.images.fileList
-            .filter(file => file.status === 'done')
-            .map(file => file.response?.data?.url || file.url)
-            .filter(Boolean)
-        : [];
-
-      const formData = {
-        ...values,
-        startTime: values.startTime ? new Date(values.startTime).toISOString() : null,
-        endTime: values.endTime ? new Date(values.endTime).toISOString() : null,
-        reminderTime: values.reminderTime ? moment(values.reminderTime).format('HH:mm') : null,
-        bankId: parseInt(values.bankId),
-        status: values.status || 0,
-        images: imageUrls.join(',')
-      };
-
-      console.log('Submitting form data:', formData);
-
       const res = await fetch('/api/activities', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          status: 0,
+          images: data.images,
+          bankId: data.bankId,
+        }),
       });
-      
-      const result = await res.json();
 
-      if (result.success) {
-        message.success('活动添加成功');
-        setIsModalVisible(false);
-        fetchActivities();
-      } else {
-        throw new Error(result.error || '添加失败');
-      }
+      if (!res.ok) throw new Error('添加活动失败');
+      
+      message.success('添加活动成功');
+      setIsModalVisible(false);
+      refreshActivities();
     } catch (error) {
       console.error('Failed to add activity:', error);
-      message.error(error.message || '活动添加失败');
+      message.error('添加活动失败');
     }
   };
 
@@ -241,46 +226,32 @@ export default function ActivityDashboard() {
     setIsModalVisible(true);
   };
 
-  const handleEdit = async (values) => {
+  const handleEdit = async (data) => {
     try {
-      if (!editingActivity?.id) {
-        throw new Error('没有选中要编辑的活动');
-      }
-      const imageUrls = values.images
-
-      debugger
-      const formData = {
-        ...values,
-        startTime: moment(values.startTime).format(),
-        endTime: moment(values.endTime).format(),
-        reminderTime: values.reminderType !== 'NONE' && values.reminderTime 
-          ? dayjs(values.reminderTime).format('HH:mm')
-          : null,
-        bankId: parseInt(values.bankId),
-        images: imageUrls
-      };
-
-      console.log('Submitting edit form data:', formData);
-
       const res = await fetch(`/api/activities/${editingActivity.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          status: editingActivity.status,
+          images: data.images,
+          bankId: data.bankId,
+        }),
       });
-      
-      const result = await res.json();
 
-      if (result.success) {
-        message.success('活动编辑成功');
-        setIsModalVisible(false);
-        setEditingActivity(null);
-        fetchActivities();
-      } else {
-        throw new Error(result.error || '编辑失败');
-      }
+      if (!res.ok) throw new Error('编辑活动失败');
+      
+      message.success('编辑活动成功');
+      setIsModalVisible(false);
+      fetchActivities();
     } catch (error) {
       console.error('Failed to edit activity:', error);
-      message.error(error.message || '活动编辑失败');
+      message.error('编辑活动失败');
     }
   };
 
@@ -405,7 +376,7 @@ export default function ActivityDashboard() {
         width={800}
       >
         <ActivityForm 
-          onSubmit={editingActivity ? handleEdit : handleAddActivity}
+          onSubmit={editingActivity ? handleEdit : handleAdd}
           initialValues={editingActivity}
         />
       </Modal>
