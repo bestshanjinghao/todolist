@@ -66,10 +66,15 @@ export default function ActivityForm({ onSubmit, initialValues }) {
   useEffect(() => {
     fetchBanks();
     if (initialValues) {
+      console.log('初始值:', initialValues);
       const formData = {
         ...initialValues,
         startTime: dayjs(initialValues.startTime),
         endTime: dayjs(initialValues.endTime),
+        reminderTime: initialValues.reminderTime 
+          ? dayjs(initialValues.reminderTime, 'HH:mm') 
+          : null,
+        reminderDays: initialValues.reminderDays?.split(','),
         images: initialValues.images
           ? initialValues.images.split(',').map(url => ({
               uid: url,
@@ -79,6 +84,7 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             }))
           : [],
       };
+      console.log('转换后的表单数据:', formData);
       form.setFieldsValue(formData);
     }
   }, [initialValues, form]);
@@ -95,6 +101,7 @@ export default function ActivityForm({ onSubmit, initialValues }) {
 
   const handleSubmit = async (values) => {
     try {
+      console.log('提交的原始值:', values);
       const imageUrls = values.images
         .map(image => {
           if (image.url) return image.url;
@@ -109,11 +116,14 @@ export default function ActivityForm({ onSubmit, initialValues }) {
         startTime: dayjs(values.startTime).format('YYYY-MM-DD HH:mm:ss'),
         endTime: dayjs(values.endTime).format('YYYY-MM-DD HH:mm:ss'),
         reminderDays: values.reminderDays?.join(',') || null,
-        reminderTime: values.reminderTime ? dayjs(values.reminderTime).format('HH:mm') : null,
+        reminderTime: values.reminderTime 
+          ? dayjs(values.reminderTime).format('HH:mm') 
+          : null,
         images: imagesString,
         contentImages: []
       };
 
+      console.log('提交的处理后数据:', data);
       await onSubmit(data);
       if (!initialValues) {
         form.resetFields();
@@ -333,6 +343,12 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             format="HH:mm"
             style={{ width: '100%' }}
             placeholder="请选择提醒时间"
+            onChange={(time, timeString) => {
+              console.log('选择的时间:', time, timeString);
+              form.setFieldsValue({ 
+                reminderTime: time 
+              });
+            }}
           />
         </Form.Item>
       </Card>
