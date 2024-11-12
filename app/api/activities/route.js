@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import moment from 'moment';
+import { startReminderScheduler } from '@/lib/scheduler';
+
+// 在开发环境下启动定时任务
+if (process.env.NODE_ENV === 'development') {
+  startReminderScheduler();
+}
 
 export async function GET(request) {
   try {
