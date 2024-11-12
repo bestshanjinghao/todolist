@@ -26,14 +26,15 @@ model Activity {
   endTime      DateTime  // 结束时间
   status       Int       @default(0)  // 活动状态：0-未开始，1-进行中，2-已结束
   
-  // 图片相关
+  // 添加提醒相关字段
+  reminderDays String?   // 提醒日期，存储为逗号分隔的数字，如 "1,2,3" 表示周一、周二、周三
+  reminderTime String?   // 提醒时间，格式为 "HH:mm"
+  
   images       String?   // 活动图片URLs，用逗号分隔
   contentImages ActivityImage[]
 
-  // 关联
   bank         Bank      @relation(fields: [bankId], references: [id])
   
-  // 时间戳
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

@@ -12,7 +12,8 @@ import {
   Space,
   Radio,
   message,
-  Image
+  Image,
+  Checkbox
 } from 'antd';
 import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
@@ -94,8 +95,6 @@ export default function ActivityForm({ onSubmit, initialValues }) {
 
   const handleSubmit = async (values) => {
     try {
-      console.log('Raw form values:', values);
-      
       const imageUrls = values.images
         .map(image => {
           if (image.url) return image.url;
@@ -109,11 +108,11 @@ export default function ActivityForm({ onSubmit, initialValues }) {
         ...values,
         startTime: dayjs(values.startTime).format('YYYY-MM-DD HH:mm:ss'),
         endTime: dayjs(values.endTime).format('YYYY-MM-DD HH:mm:ss'),
+        reminderDays: values.reminderDays?.join(',') || null,
+        reminderTime: values.reminderTime ? dayjs(values.reminderTime).format('HH:mm') : null,
         images: imagesString,
         contentImages: []
       };
-
-      console.log('Final form data:', data);
 
       await onSubmit(data);
       if (!initialValues) {
@@ -144,6 +143,16 @@ export default function ActivityForm({ onSubmit, initialValues }) {
     setPreviewIndex(currentIndex);
     setPreviewVisible(true);
   };
+
+  const weekDays = [
+    { label: '周一', value: '1' },
+    { label: '周二', value: '2' },
+    { label: '周三', value: '3' },
+    { label: '周四', value: '4' },
+    { label: '周五', value: '5' },
+    { label: '周六', value: '6' },
+    { label: '周日', value: '0' },
+  ];
 
   return (
     <Form
@@ -221,7 +230,7 @@ export default function ActivityForm({ onSubmit, initialValues }) {
               label="结束时间"
               dependencies={['startTime']}
               rules={[
-                { required: true, message: '���选择结束时间' },
+                { required: true, message: '选择结束时间' },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
                     const startTime = getFieldValue('startTime');
@@ -303,6 +312,28 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             <p className="ant-upload-text">点击或拖拽上传活动图片</p>
             <p className="ant-upload-hint">支持单个或批量上传图片</p>
           </Upload.Dragger>
+        </Form.Item>
+      </Card>
+
+      <Card title="提醒设置" style={{ marginBottom: 24 }}>
+        <Form.Item
+          name="reminderDays"
+          label="提醒日期"
+          tooltip="选择每周需要提醒的日期"
+        >
+          <Checkbox.Group options={weekDays} />
+        </Form.Item>
+
+        <Form.Item
+          name="reminderTime"
+          label="提醒时间"
+          tooltip="设置提醒时间"
+        >
+          <TimePicker
+            format="HH:mm"
+            style={{ width: '100%' }}
+            placeholder="请选择提醒时间"
+          />
         </Form.Item>
       </Card>
 

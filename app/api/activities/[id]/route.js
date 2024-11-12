@@ -100,7 +100,6 @@ export async function DELETE(request, { params }) {
         { status: 404 }
       );
     }
-    debugger
     // 删除活动及相关数据
     await prisma.activity.delete({
       where: { id }
@@ -132,6 +131,8 @@ export async function PUT(request, { params }) {
         endTime: new Date(data.endTime),
         status: data.status,
         images: data.images,
+        reminderDays: data.reminderDays,
+        reminderTime: data.reminderTime,
         bank: {
           connect: {
             id: data.bankId

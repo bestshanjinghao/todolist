@@ -90,6 +90,25 @@ export default function ActivityList({
     return actions;
   };
 
+  const formatReminder = (activity) => {
+    if (!activity.reminderDays || !activity.reminderTime) return null;
+    
+    const days = activity.reminderDays.split(',').map(day => {
+      const dayMap = {
+        '0': '周日',
+        '1': '周一',
+        '2': '周二',
+        '3': '周三',
+        '4': '周四',
+        '5': '周五',
+        '6': '周六'
+      };
+      return dayMap[day];
+    }).join('、');
+
+    return `${days} ${activity.reminderTime}`;
+  };
+
   const columns = [
     {
       title: '活动名称',
@@ -179,6 +198,12 @@ export default function ActivityList({
                   WebkitBoxOrient: 'vertical'
                 }}>
                   {activity.description}
+                </div>
+              )}
+              {formatReminder(activity) && (
+                <div>
+                  <ClockCircleOutlined style={{ marginRight: 8 }} />
+                  提醒时间：{formatReminder(activity)}
                 </div>
               )}
             </Space>

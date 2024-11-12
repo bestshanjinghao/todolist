@@ -248,12 +248,14 @@ export default function ActivityDashboard() {
           status: editingActivity.status,
           images: data.images,
           bankId: data.bankId,
+          reminderDays: data.reminderDays,
+          reminderTime: data.reminderTime,
         }),
       });
 
       if (!res.ok) throw new Error('编辑活动失败');
       
-      message.success('编辑活动成功');
+      message.success('编辑活动成功11');
       setIsModalVisible(false);
       fetchActivities();
     } catch (error) {
