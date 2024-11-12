@@ -4,6 +4,16 @@ import { ConfigProvider } from 'antd';
 import locale from 'antd/locale/zh_CN';
 import 'moment/locale/zh-cn';
 import moment from 'moment';
+import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.locale('zh-cn');
+// 设置默认时区为北京时间
+dayjs.tz.setDefault('Asia/Shanghai');
 
 moment.locale('zh-cn');
 

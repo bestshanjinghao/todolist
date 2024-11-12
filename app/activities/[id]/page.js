@@ -85,26 +85,6 @@ export default function ActivityDetail({ params }) {
     });
   };
 
-  const handleAddReminder = async (values) => {
-    try {
-      const res = await fetch(`/api/activities/${id}/reminders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      });
-      
-      if (res.ok) {
-        message.success('提醒设置成功');
-        setIsReminderModalVisible(false);
-        fetchActivityDetail();
-      } else {
-        throw new Error('设置失败');
-      }
-    } catch (error) {
-      message.error('提醒设置失败');
-    }
-  };
-
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -178,19 +158,7 @@ export default function ActivityDetail({ params }) {
           </>
         )}
 
-        <Divider orientation="left">提醒时间</Divider>
-        <Timeline>
-          {activity.reminders.map(reminder => (
-            <Timeline.Item 
-              key={reminder.id}
-              dot={<ClockCircleOutlined />}
-              color={reminder.status === 0 ? "blue" : "green"}
-            >
-              {new Date(reminder.remindTime).toLocaleString()}
-              {reminder.status === 1 && " (已提醒)"}
-            </Timeline.Item>
-          ))}
-        </Timeline>
+        
       </Card>
 
       <Modal

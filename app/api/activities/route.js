@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma';
 import moment from 'moment';
 
 export async function GET(request) {
-  debugger
   try {
     const activities = await prisma.activity.findMany({
       include: {

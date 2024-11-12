@@ -5,7 +5,7 @@ import {
   EditOutlined, 
   DeleteOutlined 
 } from '@ant-design/icons';
-import moment from 'moment';
+import dayjs from 'dayjs';
 
 export default function ActivityList({ 
   activities, 
@@ -27,7 +27,7 @@ export default function ActivityList({
   };
 
   const formatDate = (dateString) => {
-    return moment(dateString).format('YYYY-MM-DD HH:mm');
+    return dayjs(dateString).format('YYYY-MM-DD HH:mm');
   };
 
   const getActionButtons = (activity) => {
@@ -105,13 +105,13 @@ export default function ActivityList({
       title: '开始时间',
       dataIndex: 'startTime',
       key: 'startTime',
-      render: (text) => moment(text).format('YYYY-MM-DD HH:mm:ss'),
+      render: (text) => dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
       title: '结束时间',
       dataIndex: 'endTime',
       key: 'endTime',
-      render: (text) => moment(text).format('YYYY-MM-DD HH:mm:ss'),
+      render: (text) => dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
       title: '状态',

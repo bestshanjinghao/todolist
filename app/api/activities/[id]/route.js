@@ -34,7 +34,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error('Get activity error:', error);
     return NextResponse.json(
-      { success: false, error: '获取活动失败' },
+      { success: false, error },
       { status: 500 }
     );
   }
@@ -86,7 +86,7 @@ export async function PATCH(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const id = parseInt(params.id);
     
     // 删除相关的图片文件
     const activity = await prisma.activity.findUnique({
@@ -100,7 +100,7 @@ export async function DELETE(request, { params }) {
         { status: 404 }
       );
     }
-
+    debugger
     // 删除活动及相关数据
     await prisma.activity.delete({
       where: { id }
@@ -110,7 +110,7 @@ export async function DELETE(request, { params }) {
   } catch (error) {
     console.error('Delete activity error:', error);
     return NextResponse.json(
-      { error: "Failed to delete activity" },
+      { error },
       { status: 500 }
     );
   }
@@ -147,7 +147,7 @@ export async function PUT(request, { params }) {
   } catch (error) {
     console.error('更新活动失败:', error);
     return NextResponse.json(
-      { error: '更新活动失败' },
+      { error },
       { status: 500 }
     );
   }

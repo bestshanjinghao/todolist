@@ -107,8 +107,8 @@ export default function ActivityForm({ onSubmit, initialValues }) {
 
       const data = {
         ...values,
-        startTime: dayjs(values.startTime).format(),
-        endTime: dayjs(values.endTime).format(),
+        startTime: dayjs(values.startTime).format('YYYY-MM-DD HH:mm:ss'),
+        endTime: dayjs(values.endTime).format('YYYY-MM-DD HH:mm:ss'),
         images: imagesString,
         contentImages: []
       };
@@ -196,6 +196,18 @@ export default function ActivityForm({ onSubmit, initialValues }) {
             >
               <DatePicker 
                 showTime 
+                onChange={(date, dateString) => {
+                  console.log('moment/dayjs对象:', date);
+                  console.log('字符串格式:', dateString);
+                  console.log('时间戳:', date?.valueOf());
+                  console.log('ISO格式:', date?.toISOString());
+                  
+                  // 如果使用 dayjs
+                  console.log('dayjs格式化:', date?.format('YYYY-MM-DD HH:mm:ss'));
+                  
+                  // 如果使用 moment
+                  console.log('moment格式化:', date?.format('YYYY-MM-DD HH:mm:ss'));
+                }}
                 style={{ width: '100%' }}
                 placeholder="请选择开始时间"
                 disabledDate={(current) => current && current < dayjs().startOf('day')}
@@ -209,7 +221,7 @@ export default function ActivityForm({ onSubmit, initialValues }) {
               label="结束时间"
               dependencies={['startTime']}
               rules={[
-                { required: true, message: '请选择结束时间' },
+                { required: true, message: '���选择结束时间' },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
                     const startTime = getFieldValue('startTime');

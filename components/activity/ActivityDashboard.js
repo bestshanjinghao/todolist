@@ -29,7 +29,6 @@ export default function ActivityDashboard() {
 
   const fetchActivities = useCallback(async (filters = {}) => {
     try {
-      console.log('fetchActivities 被调用, 调用栈:', new Error().stack);
       setLoading(true);
       setError(null);
       
@@ -117,7 +116,15 @@ export default function ActivityDashboard() {
           description: data.description,
           startTime: data.startTime,
           endTime: data.endTime,
-          status: 0,
+          status: (() => {
+            const now = new Date();
+            const start = new Date(data.startTime);
+            const end = new Date(data.endTime);
+            
+            if (now < start) return 0; // 未开始
+            if (now >= start && now <= end) return 1; // 进行中
+            if (now > end) return 3; // 已过期
+          })(),
           images: data.images,
           bankId: data.bankId,
         }),
@@ -127,7 +134,7 @@ export default function ActivityDashboard() {
       
       message.success('添加活动成功');
       setIsModalVisible(false);
-      refreshActivities();
+      fetchActivities();
     } catch (error) {
       console.error('Failed to add activity:', error);
       message.error('添加活动失败');
