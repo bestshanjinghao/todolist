@@ -63,9 +63,17 @@ export default function ActivityForm({ onSubmit, initialValues }) {
   const [previewGroup, setPreviewGroup] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
 
+
+  // 只在挂载时执行一次
+useEffect(() => {
+  fetchBanks();
+}, []); // 空依赖数组
+
+  // useEffect是不是只有在组件挂载的时候执行一次？
   useEffect(() => {
-    fetchBanks();
+    
     if (initialValues) {
+      
       console.log('初始值:', initialValues);
       const formData = {
         ...initialValues,
@@ -86,6 +94,8 @@ export default function ActivityForm({ onSubmit, initialValues }) {
       };
       console.log('转换后的表单数据:', formData);
       form.setFieldsValue(formData);
+    }else{
+      form.resetFields();
     }
   }, [initialValues, form]);
 

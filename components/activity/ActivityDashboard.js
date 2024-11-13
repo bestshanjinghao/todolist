@@ -310,7 +310,10 @@ export default function ActivityDashboard() {
           <Button 
             type="primary" 
             icon={<PlusOutlined />}
-            onClick={() => setIsModalVisible(true)}
+            onClick={() => {
+              setEditingActivity(null); // 清除编辑状态
+              setIsModalVisible(true);
+            }}
           >
             添加活动
           </Button>
